@@ -22,6 +22,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _subscribeToTodos();
   }
 
+  @override
+  void dispose() {
+    supabase.removeAllChannels();
+    super.dispose();
+  }
+
   Future<void> _fetchTodos() async {
     setState(() {
       _loading = true;
@@ -157,122 +163,154 @@ class _HomeScreenState extends State<HomeScreen> {
         .where((todo) => todo['is_completed'] == true)
         .length;
     final totalCount = todos.length;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      // A soft grey background makes the pure white cards "pop"
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text('My To-Do List'),
+        backgroundColor: Colors.grey[100],
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'My To-Do List',
+          style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: _signOut,
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             color: Colors.redAccent,
-            tooltip: 'Sign Out',
           ),
         ],
       ),
       body: _loading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                if (totalCount > 0)
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    color: Colors.indigo.shade50,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Completed $completedCount of $totalCount tasks',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  children: [
+                    if (totalCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Card(
+                          elevation: 0,
+                          color: Colors.indigo[50],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: todos.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox,
-                                size: 80,
-                                color: Colors.indigo.shade100,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No Todos yet.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.indigo.shade200,
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Tap the + button to add one.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_outline,
                                   color: Colors.indigo,
                                 ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: EdgeInsets.all(8),
-                          itemCount: todos.length,
-                          itemBuilder: (context, index) {
-                            final todo = todos[index];
-                            return Card(
-                              color: Colors.white,
-                              margin: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: todo['is_completed'],
-                                  onChanged: (value) {
-                                    _toggle(todo['id'], todo['is_completed']);
-                                  },
-                                ),
-                                title: Text(
-                                  todo['title'],
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Completed $completedCount of $totalCount tasks',
                                   style: TextStyle(
-                                    decoration: todo['is_completed']
-                                        ? TextDecoration.lineThrough
-                                        : null,
-
-                                    color: todo['is_completed']
-                                        ? Colors.grey
-                                        : Colors.indigo,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.indigo[900],
                                   ),
                                 ),
-                                trailing: IconButton(
-                                  onPressed: () => _deleteTodo(todo['id']),
-                                  icon: Icon(
-                                    Icons.delete,
-                                    color: Colors.redAccent,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                              ],
+                            ),
+                          ),
                         ),
+                      ),
+                    Expanded(
+                      child: todos.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inbox,
+                                    size: 80,
+                                    color: Colors.indigo[100],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No Todos yet.',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.indigo[200],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              itemCount: todos.length,
+                              itemBuilder: (context, index) {
+                                final todo = todos[index];
+                                return Card(
+                                  color: Colors
+                                      .white, // High contrast against the grey background
+                                  elevation: 3,
+                                  shadowColor: Colors.black26,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 8,
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 4,
+                                    ),
+                                    leading: Checkbox(
+                                      activeColor: Colors.indigo,
+                                      value: todo['is_completed'],
+                                      onChanged: (value) => _toggle(
+                                        todo['id'],
+                                        todo['is_completed'],
+                                      ),
+                                    ),
+                                    title: Text(
+                                      todo['title'],
+                                      style: TextStyle(
+                                        decoration: todo['is_completed']
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: todo['is_completed']
+                                            ? Colors.grey
+                                            : Colors.black87,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    trailing: IconButton(
+                                      onPressed: () => _deleteTodo(todo['id']),
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddTodoDialog,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
-        child: Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text("Add Task"),
       ),
     );
   }
